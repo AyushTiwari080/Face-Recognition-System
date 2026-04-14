@@ -1,0 +1,51 @@
+* {
+    padding: 0;
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-image: url('https://cutewallpaper.org/21/1920-x-1080-gif/1920x1080-Wallpapercartoon-Wallpapers-Driverlayer-Search-.gif');
+    background-size: cover;
+    color: rgb(255, 255, 255);
+    height: 100vh;
+    margin-top: 40px;
+}
+
+h1 {
+    text-align: center;
+    color: white;
+    font-size: 44px;
+    margin-top: 20px;
+}
+
+table {
+    width: 86%;
+    margin: auto;
+    border-collapse: collapse;
+    background-color: white;
+}
+
+td, th {
+    border: 1px solid black;
+    padding: 8px;
+}
+
+tr:nth-child(even) {
+    background-color: #dddddd;
+}
+
+button {
+    font-size: 24px;
+    font-weight: bold;
+    border-radius: 10px;
+    width: 300px;
+    padding: 10px;
+    margin: 20px;
+}
+
+input[type="text"], input[type="number"] {
+    font-size: 20px;
+    padding: 5px;
+    margin: 10px 0;
+}

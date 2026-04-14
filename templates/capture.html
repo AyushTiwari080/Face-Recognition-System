@@ -1,0 +1,250 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <title>Capture Face - Face Recognition Attendance</title>
+
+    <style>
+        * {
+            padding: 0;
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-image: url('https://cutewallpaper.org/21/1920-x-1080-gif/1920x1080-Wallpapercartoon-Wallpapers-Driverlayer-Search-.gif');
+            background-size: cover;
+            margin-top: 40px;
+            height: 100vh;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 20px;
+            padding: 20px;
+        }
+
+        #video-container {
+            position: relative;
+            display: inline-block;
+        }
+
+        #video {
+            border-radius: 10px;
+            width: 100%;
+            max-width: 640px;
+        }
+
+        #canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 10px;
+        }
+
+        .btn-capture {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background-color: #0b4c61;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-capture:hover {
+            background-color: #063846;
+        }
+
+        .btn-done {
+            margin-top: 20px;
+            padding: 15px 40px;
+            font-size: 20px;
+            background-color: #28a745;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .btn-done:hover {
+            background-color: #218838;
+        }
+
+        .status {
+            font-size: 24px;
+            margin-top: 20px;
+            color: #0b4c61;
+        }
+
+        .btn-back {
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <a href="/" class="btn btn-secondary btn-back">← Back to Home</a>
+        
+        <h1 class="text-center" style="color: #0b4c61;">Add New User - Capture Face</h1>
+        
+        <div class="text-center mt-3">
+            <p>Enter your details and capture at least 20 face images for training.</p>
+        </div>
+
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <h3>User Details</h3>
+                <form id="userForm">
+                    <div class="mb-3">
+                        <label style="font-size: 18px;"><b>Enter New User Name*</b></label>
+                        <input type="text" id="newusername" name="newusername" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label style="font-size: 18px;"><b>Enter New User ID*</b></label>
+                        <input type="number" id="newuserid" name="newuserid" class="form-control" required>
+                    </div>
+                </form>
+            </div>
+            
+            <div class="col-md-6">
+                <h3>Camera Preview</h3>
+                <div id="video-container">
+                    <video id="video" autoplay playsinline></video>
+                    <canvas id="canvas"></canvas>
+                </div>
+                <div class="status">Images Captured: <span id="count">0</span>/50</div>
+                <button id="captureBtn" class="btn-capture" disabled>Capture Image</button>
+                <button id="doneBtn" class="btn-done" disabled>Done</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const doneBtn = document.getElementById('doneBtn');
+        const countSpan = document.getElementById('count');
+        
+        let capturedCount = 0;
+        let stream = null;
+
+        // Start camera
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ 
+                    video: { 
+                        width: { ideal: 640 },
+                        height: { ideal: 480 }
+                    } 
+                });
+                video.srcObject = stream;
+                
+                // Set canvas size to match video
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                };
+            } catch (err) {
+                alert('Error accessing camera: ' + err.message);
+            }
+        }
+
+        // Check if form is filled
+        function checkForm() {
+            const name = document.getElementById('newusername').value;
+            const id = document.getElementById('newuserid').value;
+            captureBtn.disabled = !(name && id);
+            doneBtn.disabled = !(name && id && capturedCount > 0);
+        }
+
+        document.getElementById('newusername').addEventListener('input', checkForm);
+        document.getElementById('newuserid').addEventListener('input', checkForm);
+
+        // Capture image
+        captureBtn.addEventListener('click', async () => {
+            if (capturedCount >= 50) {
+                alert('Maximum 50 images reached. Click Done to finish.');
+                return;
+            }
+
+            // Draw video frame to canvas
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+            
+            // Get image data
+            const imageData = canvas.toDataURL('image/jpeg');
+            
+            // Send to server
+            const formData = new FormData();
+            formData.append('newusername', document.getElementById('newusername').value);
+            formData.append('newuserid', document.getElementById('newuserid').value);
+            formData.append('image', imageData);
+
+            try {
+                const response = await fetch('/add', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const result = await response.json();
+                if (result.success) {
+                    capturedCount = result.count;
+                    countSpan.textContent = capturedCount;
+                    
+                    if (capturedCount >= 20) {
+                        doneBtn.disabled = false;
+                    }
+                    
+                    // Show visual feedback
+                    captureBtn.textContent = 'Captured!';
+                    setTimeout(() => {
+                        captureBtn.textContent = 'Capture Image';
+                    }, 500);
+                }
+            } catch (err) {
+                console.error('Error:', err);
+            }
+        });
+
+        // Done - train model
+        doneBtn.addEventListener('click', async () => {
+            if (capturedCount < 5) {
+                alert('Please capture at least 5 images before finishing.');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('newusername', document.getElementById('newusername').value);
+            formData.append('newuserid', document.getElementById('newuserid').value);
+
+            try {
+                const response = await fetch('/complete_capture', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const html = await response.text();
+                document.body.innerHTML = html;
+            } catch (err) {
+                console.error('Error:', err);
+                alert('Error completing capture. Please try again.');
+            }
+        });
+
+        // Start camera on load
+        startCamera();
+    </script>
+</body>
+</html>
+
